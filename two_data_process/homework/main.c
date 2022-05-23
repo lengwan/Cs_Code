@@ -205,21 +205,22 @@ void *my_calloc(size_t nmemb,size_t size)
     memset(p,0,num);
     return p;
 }
+
+//2.78
+int divide_power2(int x,int k)
+{
+    //K的取值 0<=k<w-1
+    //大于0下舍入 小于0上舍入
+    int bias=((x>>31)&1)*((1<<k)-1);//偏置
+    return (x+bias)>>k;
+}
+//2.79
+
 int main()
 {
-   // char a=-128;
-    unsigned temp;
-    unsigned long long xx=0,c_xx;
-    unsigned x=0xffffffff,y=0xfffffff;
-    temp=unsigned_high_prod(x,y);
-
-
-    //校验
-    xx=( unsigned long long)x*( unsigned long long)y;
-    c_xx=x*y;
-    c_xx+=(unsigned long long)temp<<32;
-    printf("jisuan:   %llu  temp:%u\n",c_xx,temp);
-    printf("yuan:   %llu\n",xx);
+    int a;
+    a=divide_power2(21,2);
+    printf("%d ",a);
 
     return 0;
 }
