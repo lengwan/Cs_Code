@@ -218,9 +218,9 @@ int divide_power2(int x,int k)
 
 int main()
 {
-    int a;
+    int a=-5;
     a=divide_power2(21,2);
-    printf("%d ",a);
+    printf("%d ",a/2);
 
     return 0;
 }
