@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 typedef unsigned char *byte_pointer;//指向无符号数的指针
-
+typedef unsigned float_bits;
 void show_bytes(byte_pointer start_p,size_t len)
 {
     size_t i;
@@ -214,13 +214,208 @@ int divide_power2(int x,int k)
     int bias=((x>>31)&1)*((1<<k)-1);//偏置
     return (x+bias)>>k;
 }
-//2.79
+//2.80
 
+int threefourths(int x)
+{
+    //计算（3/4）x  向零舍入
+    int y=x>>2;
+    int p=x>>1;
+    //低两位都是一补偿
+    int bias=((x&0x3)==3);
+    return p+y+bias;
+}
+//2.84
+unsigned f2u(float x)
+{
+    int i;
+    unsigned rec;
+    unsigned char *pp=&rec;
+    unsigned char *q=&x;
+    for(i=0;i<sizeof(float);i++)
+    {
+        *(pp+i)=q[i];
+    }
+    return rec;
+
+}
+//x<=y返回1
+int float_le(float x,float y)
+{
+    unsigned ux=f2u(x);
+    unsigned uy=f2u(y);
+    //get the sign bits
+    unsigned sx=ux>>31;
+    unsigned sy=uy>>31;
+
+    return (sx>sy)||((!(ux<<1))&&(!(uy<<1)))||((sx==sy)&&(!(sx)&&((ux<<1)<=(uy<<1)))||((sx)&&(ux<<1)>=(uy<<1)));
+    //第一种符号+-，
+}
+
+//2.90
+float u2f(unsigned x)
+{
+    int i=0;
+    float rec;
+    char *sor=&x,*dir=&rec;
+    for(i=0;i<sizeof(unsigned);i++)
+    {
+        dir[i]=sor[i];
+    }
+    return rec;
+
+}
+/*计算2的x次方*/
+float fpwr2(int x)
+{
+    unsigned u,exp,frac;//符号位，阶码，尾数
+    if(x<-149)
+    {
+        //返回0
+        exp=0;
+        frac=0;
+    }
+    else if(x<-126)
+    {
+        //非规格化数
+        exp=0;
+        frac=1<<(x+149);
+    }else if(x<=127)
+    {
+        //归一化数
+        exp=x+127;
+        frac=0;
+    }else
+    {
+        //太大
+        exp=255;
+        frac=0;
+    }
+    u=exp<<23|frac;
+    return u2f(u);
+}
+//2.92
+float_bits float_negate(float_bits f)
+{
+    //符号位反转
+    unsigned sign=f>>31;
+    unsigned exp=f>>23&0xff;
+    unsigned fac=f&0x7fffff;//低23位
+    if(exp==255&&fac>0)
+    {
+        return f;
+    }
+    else
+    {
+        return (!sign)<<31|exp<<23|fac;//有些位取反用异或方便 A^0=A A^1=A的反
+    }
+}
+//2.93
+float_bits float_absval(float_bits f)
+{
+    unsigned exp=f>>23&0xff;
+    unsigned fac=f&0x7fffff;//低23位
+    if(exp==255&&fac!=0)
+        return f;
+    else
+        return f&0x7fffffff;
+
+}
+//2.94
+float_bits float_twice(float_bits f)
+{
+    //计算2f
+    unsigned exp=f>>23&0xff;
+    unsigned fac=f&0x7fffff;//低23位
+    if(exp==255&&fac!=0)
+        return f;
+    else
+        return (f&~(0xff<<23))|((exp+1)<<23);
+}
+//2.95
+float_bits float_half(float_bits f)
+{
+    //计算2f
+    unsigned exp=f>>23&0xff;
+    unsigned fac=f&0x7fffff;//低23位
+    if(exp==255&&fac!=0)
+        return f;
+    else
+        return (f&~(0xff<<23))|((exp-1)<<23);
+}
+//2.96
+int float_f2i(float_bits f)
+{
+    //计算(int)f
+    int rec;
+    unsigned exp=f>>23&0xff;
+    unsigned fac=f&0x7fffff;//低23位
+    unsigned sign=f>>31;
+    //符号位保持不变
+
+    //负数向上舍入，正数向下
+    if(exp<127)
+    {
+        return 0;
+    }
+    else if(exp<151)
+    {
+        //可以表示
+        if(!sign)
+        return ((1<<(exp-127))+(fac>>(150-exp)));
+        else
+        return ~((1<<(exp-127))+(fac>>(150-exp)))+1;
+    }
+    else if(exp<158)
+    {
+        if(!sign)
+        return (1<<(exp-127))+(fac<<(exp-150));
+        else
+        return ~((1<<(exp-127))+(fac<<(exp-150)))+1;
+
+    }
+    else
+        return 0x80000000;
+}
+float_bits float_i2f(int i)
+{
+    float_bits rec;
+    int p=i,bit_wei=0;
+    unsigned exp=0;
+    unsigned fac=0;//低23位
+    unsigned sign=i>>31;
+    if(sign)
+        i=~i+1;
+    i=i&0x7fffffff;
+    p=i;
+    if(p)
+    {
+        exp=126;
+        while(p)
+        {
+            exp++;
+            p=p>>1;
+            bit_wei++;
+            //设计掩膜
+        }
+        //最高位1置零
+        fac=i&(~(1<<(bit_wei-1)));
+        show_unsigned(fac);
+        if(bit_wei>24)
+        fac=(fac>>(bit_wei-24))&0x7fffff;
+        else
+        fac=(fac<<(24-bit_wei))&0x7fffff;
+
+    }
+    rec=sign<<31|exp<<23|fac;
+    return rec;
+
+}
 int main()
 {
-    int a=-5;
-    a=divide_power2(21,2);
-    printf("%d ",a/2);
-
+    int c = -888888;
+    float k;
+    k=u2f(float_i2f(c));
+    printf("%f",k);
     return 0;
 }
