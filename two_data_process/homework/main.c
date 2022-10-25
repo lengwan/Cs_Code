@@ -163,7 +163,7 @@ int saturates_add(int x,int y)
     int res=x+y;
     if(x>0&&y>0&&res<0)
     {
-        res=0x7fffffff;
+        res=0x7ffffff1;
     }
     else if(x<0&&y<0&&res>0)
     {
